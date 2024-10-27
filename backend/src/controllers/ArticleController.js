@@ -8,7 +8,7 @@ export const getAllArticles = async (req, res) => {
       attributes: ['id', 'title', 'date_published'],
       order: [['date_published', 'DESC']],
     });
-    res.json(articles);
+    res.status(200).json(articles);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -40,13 +40,20 @@ export const createArticle = async (req, res) => {
     const fileName = `${Date.now()}-${safeTitle}.md`;
     const filePath = path.join('articles', fileName);
 
+    // Validate and format the date
+    const datePublished = new Date(date_published);
+    if (isNaN(datePublished.getTime())) {
+      throw new Error('Invalid date_published value');
+    }
+    const formattedDatePublished = datePublished.toISOString().split('T')[0];
+
     // Save Markdown file
     await fs.outputFile(filePath, content);
 
     // Save metadata to database
     const article = await Article.create({
       title,
-      date_published,
+      date_published: formattedDatePublished,
       file_path: fileName,
     });
     res.status(201).json(article);
